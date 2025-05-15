@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "z87yyTk5OJQ=",
+  "dgSpecHash": "6tBy5bThFjE=",
   "success": true,
-  "projectFilePath": "D:\\MATERI KULIAH\\Semester 6\\Pemrograman Visual\\MiniDictionaryApp\\MiniDictionaryApp.csproj",
+  "projectFilePath": "D:\\MATERI KULIAH\\Semester 6\\Pemrograman Visual\\KamusMiniApp\\KamusMiniApp.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\acer\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\acer\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",
@@ -36,6 +36,7 @@
     "C:\\Users\\acer\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.0.0\\system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
     "C:\\Users\\acer\\.nuget\\packages\\system.security.cryptography.pkcs\\9.0.4\\system.security.cryptography.pkcs.9.0.4.nupkg.sha512",
     "C:\\Users\\acer\\.nuget\\packages\\system.security.cryptography.protecteddata\\9.0.4\\system.security.cryptography.protecteddata.9.0.4.nupkg.sha512",
+    "C:\\Users\\acer\\.nuget\\packages\\system.speech\\9.0.4\\system.speech.9.0.4.nupkg.sha512",
     "C:\\Users\\acer\\.nuget\\packages\\system.text.encodings.web\\4.7.2\\system.text.encodings.web.4.7.2.nupkg.sha512",
     "C:\\Users\\acer\\.nuget\\packages\\system.text.json\\4.7.2\\system.text.json.4.7.2.nupkg.sha512",
     "C:\\Users\\acer\\.nuget\\packages\\system.threading.tasks.extensions\\4.5.4\\system.threading.tasks.extensions.4.5.4.nupkg.sha512"

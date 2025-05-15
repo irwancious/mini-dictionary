@@ -6,12 +6,13 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v9.0": {
-      "MiniDictionaryApp/1.0.0": {
+      "KamusMiniApp/1.0.0": {
         "dependencies": {
-          "Microsoft.Data.SqlClient": "6.0.2"
+          "Microsoft.Data.SqlClient": "6.0.2",
+          "System.Speech": "9.0.4"
         },
         "runtime": {
-          "MiniDictionaryApp.dll": {}
+          "KamusMiniApp.dll": {}
         }
       },
       "Azure.Core/1.38.0": {
@@ -415,13 +416,29 @@
           }
         }
       },
+      "System.Speech/9.0.4": {
+        "runtime": {
+          "lib/net9.0/System.Speech.dll": {
+            "assemblyVersion": "9.0.0.4",
+            "fileVersion": "9.0.425.16305"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/win/lib/net9.0/System.Speech.dll": {
+            "rid": "win",
+            "assetType": "runtime",
+            "assemblyVersion": "9.0.0.4",
+            "fileVersion": "9.0.425.16305"
+          }
+        }
+      },
       "System.Text.Encodings.Web/4.7.2": {},
       "System.Text.Json/4.7.2": {},
       "System.Threading.Tasks.Extensions/4.5.4": {}
     }
   },
   "libraries": {
-    "MiniDictionaryApp/1.0.0": {
+    "KamusMiniApp/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -649,6 +666,13 @@
       "sha512": "sha512-o94k2RKuAce3GeDMlUvIXlhVa1kWpJw95E6C9LwW0KlG0nj5+SgCiIxJ2Eroqb9sLtG1mEMbFttZIBZ13EJPvQ==",
       "path": "system.security.cryptography.protecteddata/9.0.4",
       "hashPath": "system.security.cryptography.protecteddata.9.0.4.nupkg.sha512"
+    },
+    "System.Speech/9.0.4": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-XpRYztNXNwH84pwjUNXPTO5TptugoPGJUZNztilpHo4RQ8oBsAqbhy7RhMTEcoJ3tfGLtizezk0r2AiJczpUFA==",
+      "path": "system.speech/9.0.4",
+      "hashPath": "system.speech.9.0.4.nupkg.sha512"
     },
     "System.Text.Encodings.Web/4.7.2": {
       "type": "package",

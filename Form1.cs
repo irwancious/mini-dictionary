@@ -1,212 +1,205 @@
 using System;
 using System.Data;
 using Microsoft.Data.SqlClient;
-// using System.Data.SqlClient;
 using System.Windows.Forms;
 
-namespace MiniDictionaryApp
+namespace KamusMiniApp
 {
     public partial class Form1 : Form
     {
-        private string connectionString = "Server=localhost\\SQLEXPRESS;Database=DictionaryDB;Integrated Security=True;TrustServerCertificate=True;";
+        // Variabel untuk quiz
+        private int idKataBenar;
+        private string jawabanBenar;
 
         public Form1()
         {
             InitializeComponent();
-            this.Text = "Kamus Mini Indonesia-Inggris by IRWAN";
+            LoadDaftarKata();
+            MulaiQuiz(); // Memulai quiz saat form pertama kali dibuka
         }
 
-        private void btnTranslate_Click(object sender, EventArgs e)
+        private void LoadDaftarKata()
         {
-            string input = txtInput.Text.Trim().ToLower();
-            string result = "";
+            DataTable dt = DatabaseHelper.ExecuteQuery("EXEC sp_GetAllKata");
+            dataGridViewKata.DataSource = dt;
+        }
 
-            if (string.IsNullOrEmpty(input))
+        private void btnTerjemah_Click(object sender, EventArgs e)
+        {
+            string teks = txtTeksTerjemah.Text.Trim();
+            bool dariIndonesia = rbIndonesia.Checked;
+
+            if (string.IsNullOrEmpty(teks))
             {
-                MessageBox.Show("Masukkan kata yang akan diterjemahkan", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Masukkan teks yang akan diterjemahkan", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            try
+            SqlParameter[] parameters = {
+                new SqlParameter("@Teks", teks),
+                new SqlParameter("@DariIndonesia", dariIndonesia)
+            };
+
+            DataTable dt = DatabaseHelper.ExecuteQuery("EXEC sp_Terjemahkan @Teks, @DariIndonesia", parameters);
+
+            if (dt.Rows.Count > 0)
             {
-                using (var connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-                    using (var command = new SqlCommand("sp_Translate", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        
-                        if (rbIndoToEng.Checked)
-                        {
-                            command.Parameters.AddWithValue("@fromLang", "Indonesian");
-                            command.Parameters.AddWithValue("@toLang", "English");
-                        }
-                        else
-                        {
-                            command.Parameters.AddWithValue("@fromLang", "English");
-                            command.Parameters.AddWithValue("@toLang", "Indonesian");
-                        }
-                        
-                        command.Parameters.AddWithValue("@word", input);
-
-                        var translatedWord = command.ExecuteScalar();
-                        result = translatedWord != null ? translatedWord.ToString() : $"[{input} tidak ditemukan dalam kamus]";
-                    }
-                }
-
-                txtOutput.Text = result;
+                txtHasilTerjemah.Text = dt.Rows[0]["Hasil"].ToString();
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show($"Error translating: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtHasilTerjemah.Text = "Terjemahan tidak ditemukan";
             }
         }
 
-        private void btnAddWord_Click(object sender, EventArgs e)
+        private void btnTambah_Click(object sender, EventArgs e)
         {
-            string indoWord = txtIndoWord.Text.Trim().ToLower();
-            string engWord = txtEngWord.Text.Trim().ToLower();
-
-            if (string.IsNullOrEmpty(indoWord) || string.IsNullOrEmpty(engWord))
+            using (FormTambahEdit form = new FormTambahEdit())
             {
-                MessageBox.Show("Masukkan kata dalam kedua bahasa", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                if (form.ShowDialog() == DialogResult.OK)
+                {
+                    LoadDaftarKata();
+                }
+            }
+        }
+
+        private void btnEdit_Click(object sender, EventArgs e)
+        {
+            if (dataGridViewKata.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Pilih kata yang akan diedit", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            try
+            DataGridViewRow row = dataGridViewKata.SelectedRows[0];
+            int id = Convert.ToInt32(row.Cells["Id"].Value);
+            string indonesia = row.Cells["KataIndonesia"].Value.ToString();
+            string inggris = row.Cells["KataInggris"].Value.ToString();
+            string keterangan = row.Cells["Keterangan"].Value?.ToString();
+
+            using (FormTambahEdit form = new FormTambahEdit(id, indonesia, inggris, keterangan))
             {
-                using (var connection = new SqlConnection(connectionString))
+                if (form.ShowDialog() == DialogResult.OK)
                 {
-                    connection.Open();
-                    using (var command = new SqlCommand("sp_AddWord", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@indoWord", indoWord);
-                        command.Parameters.AddWithValue("@engWord", engWord);
-
-                        var returnParameter = command.Parameters.Add("ReturnVal", SqlDbType.Int);
-                        returnParameter.Direction = ParameterDirection.ReturnValue;
-
-                        command.ExecuteNonQuery();
-
-                        int result = (int)returnParameter.Value;
-                        if (result == 1)
-                        {
-                            MessageBox.Show("Kata berhasil ditambahkan ke kamus", "Sukses", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            txtIndoWord.Clear();
-                            txtEngWord.Clear();
-                        }
-                        else
-                        {
-                            MessageBox.Show("Kata sudah ada dalam kamus", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        }
-                    }
+                    LoadDaftarKata();
                 }
             }
-            catch (Exception ex)
+        }
+
+        private void btnHapus_Click(object sender, EventArgs e)
+        {
+            if (dataGridViewKata.SelectedRows.Count == 0)
             {
-                MessageBox.Show($"Error adding word: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Pilih kata yang akan dihapus", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (MessageBox.Show("Apakah Anda yakin ingin menghapus kata ini?", "Konfirmasi", 
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                int id = Convert.ToInt32(dataGridViewKata.SelectedRows[0].Cells["Id"].Value);
+                SqlParameter[] parameters = { new SqlParameter("@Id", id) };
+                DatabaseHelper.ExecuteNonQuery("EXEC sp_DeleteKata @Id", parameters);
+                LoadDaftarKata();
             }
         }
 
-        private void btnClear_Click(object sender, EventArgs e)
+        private void btnCari_Click(object sender, EventArgs e)
         {
-            txtInput.Clear();
-            txtOutput.Clear();
+            string keyword = txtCari.Text.Trim();
+            if (string.IsNullOrEmpty(keyword))
+            {
+                LoadDaftarKata();
+                return;
+            }
+
+            SqlParameter[] parameters = { new SqlParameter("@Keyword", keyword) };
+            DataTable dt = DatabaseHelper.ExecuteQuery("EXEC sp_CariKata @Keyword", parameters);
+            dataGridViewKata.DataSource = dt;
         }
 
-        private void btnShowAll_Click(object sender, EventArgs e)
+        private void MulaiQuiz()
         {
-            try
-            {
-                using (var connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-                    using (var command = new SqlCommand("sp_GetAllWords", connection))
-                    {
-                        command.CommandType = CommandType.StoredProcedure;
-                        using (var adapter = new SqlDataAdapter(command))
-                        {
-                            var dataTable = new DataTable();
-                            adapter.Fill(dataTable);
-
-                            var wordList = new System.Text.StringBuilder();
-                            wordList.AppendLine("Daftar Kata dalam Kamus:");
-                            wordList.AppendLine("------------------------");
-                            wordList.AppendLine("Indonesia\t|\tInggris");
-                            wordList.AppendLine("------------------------");
-
-                            foreach (DataRow row in dataTable.Rows)
-                            {
-                                wordList.AppendLine($"{row["Indonesian"]}\t|\t{row["English"]}");
-                            }
-
-                            MessageBox.Show(wordList.ToString(), "Daftar Kata", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error showing words: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void btnSearch_Click(object sender, EventArgs e)
-        {
-            string searchTerm = txtSearch.Text.Trim().ToLower();
+            // Reset hasil sebelumnya
+            lblHasilQuiz.Text = "";
             
-            if (string.IsNullOrEmpty(searchTerm))
+            // Dapatkan kata acak untuk quiz
+            DataTable dt = DatabaseHelper.ExecuteQuery("SELECT TOP 1 Id, KataIndonesia, KataInggris FROM Kata ORDER BY NEWID()");
+            
+            if (dt.Rows.Count == 0)
             {
-                MessageBox.Show("Masukkan kata kunci pencarian", "Peringatan", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                lblSoalQuiz.Text = "Tidak ada data kata untuk quiz";
+                rbOpsi1.Visible = rbOpsi2.Visible = rbOpsi3.Visible = rbOpsi4.Visible = false;
+                btnSubmitQuiz.Enabled = false;
                 return;
             }
 
-            try
+            DataRow row = dt.Rows[0];
+            idKataBenar = Convert.ToInt32(row["Id"]);
+            jawabanBenar = row["KataInggris"].ToString();
+
+            lblSoalQuiz.Text = $"Apa terjemahan Inggris dari: '{row["KataIndonesia"]}'?";
+
+            // Dapatkan opsi jawaban
+            SqlParameter[] parameters = {
+                new SqlParameter("@IdKataBenar", idKataBenar),
+                new SqlParameter("@JumlahOpsi", 4)
+            };
+
+            DataTable dtOpsi = DatabaseHelper.ExecuteQuery("EXEC sp_GetQuizOptions @IdKataBenar, @JumlahOpsi", parameters);
+
+            // Set opsi jawaban
+            rbOpsi1.Text = dtOpsi.Rows[0][0].ToString();
+            rbOpsi2.Text = dtOpsi.Rows[1][0].ToString();
+            rbOpsi3.Text = dtOpsi.Rows[2][0].ToString();
+            rbOpsi4.Text = dtOpsi.Rows[3][0].ToString();
+
+            // Reset selection
+            rbOpsi1.Checked = rbOpsi2.Checked = rbOpsi3.Checked = rbOpsi4.Checked = false;
+        }
+
+        private void btnSubmitQuiz_Click(object sender, EventArgs e)
+        {
+            string jawaban = "";
+            if (rbOpsi1.Checked) jawaban = rbOpsi1.Text;
+            else if (rbOpsi2.Checked) jawaban = rbOpsi2.Text;
+            else if (rbOpsi3.Checked) jawaban = rbOpsi3.Text;
+            else if (rbOpsi4.Checked) jawaban = rbOpsi4.Text;
+
+            if (string.IsNullOrEmpty(jawaban))
             {
-                using (var connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = @"
-                    SELECT Indonesian, English 
-                    FROM Dictionary 
-                    WHERE Indonesian LIKE @search OR English LIKE @search
-                    ORDER BY Indonesian";
-                    
-                    using (var command = new SqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@search", $"%{searchTerm}%");
-                        
-                        using (var adapter = new SqlDataAdapter(command))
-                        {
-                            var dataTable = new DataTable();
-                            adapter.Fill(dataTable);
-
-                            if (dataTable.Rows.Count == 0)
-                            {
-                                MessageBox.Show("Tidak ditemukan kata yang sesuai", "Hasil Pencarian", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                return;
-                            }
-
-                            var wordList = new System.Text.StringBuilder();
-                            wordList.AppendLine("Hasil Pencarian:");
-                            wordList.AppendLine("------------------------");
-                            wordList.AppendLine("Indonesia\t|\tInggris");
-                            wordList.AppendLine("------------------------");
-
-                            foreach (DataRow row in dataTable.Rows)
-                            {
-                                wordList.AppendLine($"{row["Indonesian"]}\t|\t{row["English"]}");
-                            }
-
-                            MessageBox.Show(wordList.ToString(), "Hasil Pencarian", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        }
-                    }
-                }
+                lblHasilQuiz.Text = "Silakan pilih jawaban!";
+                lblHasilQuiz.ForeColor = Color.Red;
+                return;
             }
-            catch (Exception ex)
+
+            if (jawaban == jawabanBenar)
             {
-                MessageBox.Show($"Error searching: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                lblHasilQuiz.Text = "Jawaban Anda benar!";
+                lblHasilQuiz.ForeColor = Color.Green;
+            }
+            else
+            {
+                lblHasilQuiz.Text = $"Salah! Jawaban benar: {jawabanBenar}";
+                lblHasilQuiz.ForeColor = Color.Red;
+            }
+
+            // Mulai quiz baru setelah 2 detik
+            // Timer timer = new Timer();
+            System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
+            timer.Interval = 2000;
+            timer.Tick += (s, args) => {
+                timer.Stop();
+                MulaiQuiz();
+            };
+            timer.Start();
+        }
+
+        private void btnQuiz_Click(object sender, EventArgs e)
+        {
+            using (FormQuiz form = new FormQuiz())
+            {
+                form.ShowDialog();
             }
         }
     }
